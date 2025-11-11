@@ -14,20 +14,20 @@
 
 # upstream can produce releases with a different tag than the SDK version
 #%%global upstream_tag v%%{runtime_version}
-%global upstream_tag v10.0.0-preview.6.25358.103
+%global upstream_tag v10.0.100-rc.2.25502.107
 %global upstream_tag_without_v %(echo %{upstream_tag} | sed -e 's|^v||')
 
 %global hostfxr_version %{runtime_version}
-%global runtime_version 10.0.0-preview.6.25358.103
-%global aspnetcore_runtime_version 10.0.0-preview.6.25358.103
-%global sdk_version 10.0.100-preview.6.25358.103
+%global runtime_version 10.0.0-rc.2.25502.107
+%global aspnetcore_runtime_version 10.0.0-rc.2.25502.107
+%global sdk_version 10.0.100-rc.2.25502.107
 %global sdk_feature_band_version %(echo %{sdk_version} | cut -d '-' -f 1 | sed -e 's|[[:digit:]][[:digit:]]$|00|')
 %global templates_version %{aspnetcore_runtime_version}
 #%%global templates_version %%(echo %%{runtime_version} | awk 'BEGIN { FS="."; OFS="." } {print $1, $2, $3+1 }')
 
-%global runtime_rpm_version 10.0.0~preview.6.25358.103
-%global aspnetcore_runtime_rpm_version 10.0.0~preview.6.25358.103
-%global sdk_rpm_version 10.0.100~preview.6.25358.103
+%global runtime_rpm_version 10.0.0~rc.2.25502.107
+%global aspnetcore_runtime_rpm_version 10.0.0~rc.2.25502.107
+%global sdk_rpm_version 10.0.100~rc.2.25502.107
 
 %global use_bundled_brotli 0
 %global use_bundled_libunwind 1
@@ -77,19 +77,20 @@
 
 Name:           dotnet%{dotnetver}
 Version:        %{sdk_rpm_version}
-Release:        0.7%{?dist}
+Release:        0.10%{?dist}
 Summary:        .NET Runtime and SDK
 License:        0BSD AND Apache-2.0 AND (Apache-2.0 WITH LLVM-exception) AND APSL-2.0 AND BSD-2-Clause AND BSD-3-Clause AND BSD-4-Clause AND BSL-1.0 AND bzip2-1.0.6 AND CC0-1.0 AND CC-BY-3.0 AND CC-BY-4.0 AND CC-PDDC AND CNRI-Python AND EPL-1.0 AND GPL-2.0-only AND (GPL-2.0-only WITH GCC-exception-2.0) AND GPL-2.0-or-later AND GPL-3.0-only AND ICU AND ISC AND LGPL-2.1-only AND LGPL-2.1-or-later AND LicenseRef-Fedora-Public-Domain AND LicenseRef-ISO-8879 AND MIT AND MIT-Wu AND MS-PL AND MS-RL AND NCSA AND OFL-1.1 AND OpenSSL AND Unicode-DFS-2015 AND Unicode-DFS-2016 AND W3C-19980720 AND X11 AND Zlib
 
 URL:            https://github.com/dotnet/
 
-Source0:        https://github.com/dotnet/dotnet/archive/refs/tags/%{upstream_tag}.tar.gz#/dotnet-%{upstream_tag_without_v}.tar.gz
-Source1:        https://github.com/dotnet/dotnet/releases/download/%{upstream_tag}/dotnet-%{upstream_tag_without_v}.tar.gz.sig
+#Source0:        https://github.com/dotnet/dotnet/archive/refs/tags/%%{upstream_tag}.tar.gz#/dotnet-%%{upstream_tag_without_v}.tar.gz
+Source0:        https://builds.dotnet.microsoft.com/dotnet/source-build/dotnet-source-%{upstream_tag_without_v}.tar.gz
+Source1:        https://github.com/dotnet/dotnet/releases/download/%{upstream_tag}/dotnet-source-%{upstream_tag_without_v}.tar.gz.sig
 Source2:        https://dotnet.microsoft.com/download/dotnet/release-key-2023.asc
 Source3:        https://github.com/dotnet/dotnet/releases/download/%{upstream_tag}/release.json
 %if %{with bootstrap}
 # The bootstrap SDK version is one listed in the global.json file of the main source archive
-%global bootstrap_sdk_version 10.0.100-preview.6.25302.104
+%global bootstrap_sdk_version 10.0.100-rc.1.25420.111
 # The source is generated on a Fedora box via:
 # ./build-dotnet-bootstrap-tarball %%{upstream_tag}
 Source10:        dotnet-prebuilts-%{bootstrap_sdk_version}-x64.tar.gz
@@ -97,7 +98,7 @@ Source11:        dotnet-prebuilts-%{bootstrap_sdk_version}-arm64.tar.gz
 # To generate ppc64le and s390x archives:
 # 1. Build the VMR commit in cross-build mode for the architecture
 # 2. Use `build-prebuilt-archive` to create the archive from the VMR
-%global bootstrap_sdk_version_ppc64le_s390x 10.0.100-preview.6.25358.103
+%global bootstrap_sdk_version_ppc64le_s390x 10.0.100-rc.1.25451.107
 Source12:        dotnet-prebuilts-%{bootstrap_sdk_version_ppc64le_s390x}-ppc64le.tar.gz
 Source13:        dotnet-prebuilts-%{bootstrap_sdk_version_ppc64le_s390x}-s390x.tar.gz
 %endif
@@ -462,7 +463,7 @@ if [[ ${release_json_tag} != %{upstream_tag} ]]; then
    exit 1
 fi
 
-%setup -q -n dotnet-%{upstream_tag_without_v}
+%setup -q -c -n dotnet-source-%{upstream_tag_without_v}
 
 # Remove all prebuilts and binaries
 rm -rf .dotnet/
@@ -666,6 +667,7 @@ find -depth -name 'artifacts' -type d -print -exec rm -rf {} \;
 ./build.sh \
   --source-only \
   --release-manifest %{SOURCE3} \
+  --branding default \
 %if %{without bootstrap}
   --with-sdk previously-built-dotnet \
 %endif
@@ -797,8 +799,6 @@ rm %{buildroot}%{_libdir}/dotnet/ThirdPartyNotices.txt
 rm %{buildroot}%{_libdir}/dotnet/dotnet
 %endif
 
-rm -r %{buildroot}%{_libdir}/dotnet/packs/NETStandard.Library.Ref/2.1.0
-
 
 
 %check
@@ -871,8 +871,6 @@ export COMPlus_LTTng=0
 %dir %{_libdir}/dotnet/sdk
 %dir %{_libdir}/dotnet/sdk-manifests
 %{_libdir}/dotnet/sdk-manifests/%{sdk_feature_band_version}*
-# FIXME is using a 8.0.100 version a bug in the SDK?
-%{_libdir}/dotnet/sdk-manifests/8.0.100/
 %{_libdir}/dotnet/metadata
 %ifnarch %{mono_archs}
 %{_libdir}/dotnet/library-packs
@@ -890,6 +888,8 @@ export COMPlus_LTTng=0
 %dir %{_libdir}/dotnet/packs
 %dir %{_libdir}/dotnet/packs/runtime.%{runtime_id}.Microsoft.DotNet.ILCompiler/
 %{_libdir}/dotnet/packs/runtime.%{runtime_id}.Microsoft.DotNet.ILCompiler/%{runtime_version}*
+%dir %{_libdir}/dotnet/packs/Microsoft.NETCore.App.Runtime.NativeAOT.%{runtime_id}/
+%{_libdir}/dotnet/packs/Microsoft.NETCore.App.Runtime.NativeAOT.%{runtime_id}/%{runtime_version}*
 %endif
 
 %files -n dotnet-sdk-%{dotnetver}-source-built-artifacts
@@ -899,6 +899,18 @@ export COMPlus_LTTng=0
 
 
 %changelog
+* Fri Oct 17 2025 Omair Majid <omajid@redhat.com> - 10.0.100~rc.2.25502.107-0.10
+- Update to .NET SDK 10.0.100-rc.2.25502.107 and Runtime 10.0.0-rc.2.25502.107
+- Resolves: RHEL-121559
+
+* Tue Sep 16 2025 Omair Majid <omajid@redhat.com> - 10.0.100~rc.1.25451.107-0.9
+- Disable bootstrap
+- Resolves: RHEL-114572
+
+* Sun Sep 14 2025 Omair Majid <omajid@redhat.com> - 10.0.100~rc.1.25451.107-0.8
+- Update to RC 1
+- Resolves: RHEL-114572
+
 * Thu Sep 04 2025 Omair Majid <omajid@redhat.com> - 10.0.100~preview.6.25358.103-0.7
 - Drop netstandard-targeting-pack-2.1
 - Resolves: RHEL-111815
