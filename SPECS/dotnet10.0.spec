@@ -14,20 +14,20 @@
 
 # upstream can produce releases with a different tag than the SDK version
 #%%global upstream_tag v%%{runtime_version}
-%global upstream_tag v10.0.100-preview.7.25380.108
+%global upstream_tag v10.0.100
 %global upstream_tag_without_v %(echo %{upstream_tag} | sed -e 's|^v||')
 
 %global hostfxr_version %{runtime_version}
-%global runtime_version 10.0.0-preview.7.25380.108
-%global aspnetcore_runtime_version 10.0.0-preview.7.25380.108
-%global sdk_version 10.0.100-preview.7.25380.108
+%global runtime_version 10.0.0
+%global aspnetcore_runtime_version 10.0.0
+%global sdk_version 10.0.100
 %global sdk_feature_band_version %(echo %{sdk_version} | cut -d '-' -f 1 | sed -e 's|[[:digit:]][[:digit:]]$|00|')
 %global templates_version %{aspnetcore_runtime_version}
 #%%global templates_version %%(echo %%{runtime_version} | awk 'BEGIN { FS="."; OFS="." } {print $1, $2, $3+1 }')
 
-%global runtime_rpm_version 10.0.0~preview.7.25380.108
-%global aspnetcore_runtime_rpm_version 10.0.0~preview.7.25380.108
-%global sdk_rpm_version 10.0.100~preview.7.25380.108
+%global runtime_rpm_version %{runtime_version}
+%global aspnetcore_runtime_rpm_version %{aspnetcore_runtime_version}
+%global sdk_rpm_version %{sdk_version}
 
 %global use_bundled_brotli 0
 %global use_bundled_libunwind 1
@@ -77,7 +77,7 @@
 
 Name:           dotnet%{dotnetver}
 Version:        %{sdk_rpm_version}
-Release:        0.9%{?dist}
+Release:        2%{?dist}
 Summary:        .NET Runtime and SDK
 License:        0BSD AND Apache-2.0 AND (Apache-2.0 WITH LLVM-exception) AND APSL-2.0 AND BSD-2-Clause AND BSD-3-Clause AND BSD-4-Clause AND BSL-1.0 AND bzip2-1.0.6 AND CC0-1.0 AND CC-BY-3.0 AND CC-BY-4.0 AND CC-PDDC AND CNRI-Python AND EPL-1.0 AND GPL-2.0-only AND (GPL-2.0-only WITH GCC-exception-2.0) AND GPL-2.0-or-later AND GPL-3.0-only AND ICU AND ISC AND LGPL-2.1-only AND LGPL-2.1-or-later AND LicenseRef-Fedora-Public-Domain AND LicenseRef-ISO-8879 AND MIT AND MIT-Wu AND MS-PL AND MS-RL AND NCSA AND OFL-1.1 AND OpenSSL AND Unicode-DFS-2015 AND Unicode-DFS-2016 AND W3C-19980720 AND X11 AND Zlib
 
@@ -89,7 +89,7 @@ Source2:        https://dotnet.microsoft.com/download/dotnet/release-key-2023.as
 Source3:        https://github.com/dotnet/dotnet/releases/download/%{upstream_tag}/release.json
 %if %{with bootstrap}
 # The bootstrap SDK version is one listed in the global.json file of the main source archive
-%global bootstrap_sdk_version 10.0.100-preview.7.25322.101
+%global bootstrap_sdk_version 10.0.100-rc.1.25420.111
 # The source is generated on a Fedora box via:
 # ./build-dotnet-bootstrap-tarball %%{upstream_tag}
 Source10:        dotnet-prebuilts-%{bootstrap_sdk_version}-x64.tar.gz
@@ -97,7 +97,7 @@ Source11:        dotnet-prebuilts-%{bootstrap_sdk_version}-arm64.tar.gz
 # To generate ppc64le and s390x archives:
 # 1. Build the VMR commit in cross-build mode for the architecture
 # 2. Use `build-prebuilt-archive` to create the archive from the VMR
-%global bootstrap_sdk_version_ppc64le_s390x 10.0.100-preview.7.25380.108
+%global bootstrap_sdk_version_ppc64le_s390x 10.0.100-rc.1.25451.107
 Source12:        dotnet-prebuilts-%{bootstrap_sdk_version_ppc64le_s390x}-ppc64le.tar.gz
 Source13:        dotnet-prebuilts-%{bootstrap_sdk_version_ppc64le_s390x}-s390x.tar.gz
 %endif
@@ -436,7 +436,7 @@ applications using the .NET SDK.
 }
 
 %dotnet_targeting_pack dotnet-apphost-pack-%{dotnetver} %{runtime_rpm_version} Microsoft.NETCore.App %{dotnetver} Microsoft.NETCore.App.Host.%{runtime_id}
-%dotnet_targeting_pack dotnet-targeting-pack-%{dotnetver} %{runtime_rpm_version} Microsoft.NETCore.App.Ref %{dotnetver} Microsoft.NETCore.App.Ref
+%dotnet_targeting_pack dotnet-targeting-pack-%{dotnetver} %{runtime_rpm_version} Microsoft.NETCore.App %{dotnetver} Microsoft.NETCore.App.Ref
 %dotnet_targeting_pack aspnetcore-targeting-pack-%{dotnetver} %{aspnetcore_runtime_rpm_version} Microsoft.AspNetCore.App %{dotnetver} Microsoft.AspNetCore.App.Ref
 
 
@@ -605,10 +605,15 @@ CXXFLAGS=$(echo $CXXFLAGS | sed -e 's/-march=x86-64-v3 //')
 LDFLAGS=$(echo $LDFLAGS | sed -e 's/-march=x86-64-v3 //')
 %endif
 
-
 # Enabling fortify-source and "-Wall -Weverything" produces new warnings from libc. Turn them off.
 CFLAGS="$CFLAGS -Wno-used-but-marked-unused"
 CXXFLAGS="$CXXFLAGS -Wno-used-but-marked-unused"
+
+%if 0%{?fedora} >= 43 || 0%{?rhel} > 10
+# -Wall includes Wjump-misses-init in newer clang versions
+CFLAGS="$CFLAGS -Wno-jump-misses-init"
+CXXFLAGS="$CXXFLAGS -Wno-jump-misses-init"
+%endif
 
 export EXTRA_CFLAGS="$CFLAGS"
 export EXTRA_CXXFLAGS="$CXXFLAGS"
@@ -648,7 +653,7 @@ max_attempts=3
 timeout=5h
 %else
 max_attempts=3
-timeout=90m
+timeout=120m
 %endif
 
 function retry_until_success {
@@ -677,6 +682,7 @@ find -depth -name 'artifacts' -type d -print -exec rm -rf {} \;
 ./build.sh \
   --source-only \
   --release-manifest %{SOURCE3} \
+  --branding rtm \
 %if %{without bootstrap}
   --with-sdk previously-built-dotnet \
 %endif
@@ -706,9 +712,9 @@ sed -e 's|[@]LIBDIR[@]|%{_libdir}|g' %{SOURCE102} > dotnet.sh
 
 %install
 install -dm 0755 %{buildroot}%{_libdir}/dotnet
-ls artifacts/assets/Release/
+find artifacts/assets/Release/
 mkdir -p built-sdk
-tar xf artifacts/assets/Release/Sdk/%{sdk_version}/dotnet-sdk-%{sdk_version}*-%{runtime_id}.tar.gz -C %{buildroot}%{_libdir}/dotnet/
+tar xf artifacts/assets/Release/dotnet-sdk-%{sdk_version}*-%{runtime_id}.tar.gz -C %{buildroot}%{_libdir}/dotnet/
 
 # Delete bundled certificates: we want to use the system store only,
 # except for when we have no other choice and ca-certificates doesn't
@@ -808,9 +814,6 @@ rm %{buildroot}%{_libdir}/dotnet/ThirdPartyNotices.txt
 rm %{buildroot}%{_libdir}/dotnet/dotnet
 %endif
 
-# Removed by upstream in .NET 10 RC 1
-rm -r %{buildroot}%{_libdir}/dotnet/packs/NETStandard.Library.Ref/
-
 
 
 %check
@@ -900,6 +903,7 @@ export COMPlus_LTTng=0
 %dir %{_libdir}/dotnet/packs
 %dir %{_libdir}/dotnet/packs/runtime.%{runtime_id}.Microsoft.DotNet.ILCompiler/
 %{_libdir}/dotnet/packs/runtime.%{runtime_id}.Microsoft.DotNet.ILCompiler/%{runtime_version}*
+%dir %{_libdir}/dotnet/packs/Microsoft.NETCore.App.Runtime.NativeAOT.%{runtime_id}/
 %{_libdir}/dotnet/packs/Microsoft.NETCore.App.Runtime.NativeAOT.%{runtime_id}/%{runtime_version}*
 %endif
 
@@ -910,6 +914,26 @@ export COMPlus_LTTng=0
 
 
 %changelog
+* Wed Nov 05 2025 Omair Majid <omajid@redhat.com> - 10.0.100-2
+- Do not include -rtm in version strings of the SDK
+- Related: RHEL-125751
+
+* Mon Nov 03 2025 Omair Majid <omajid@redhat.com> - 10.0.100-1
+- Update to .NET SDK 10.0.100 and Runtime 10.0.0
+- Resolves: RHEL-125751
+
+* Wed Oct 15 2025 Omair Majid <omajid@redhat.com> - 10.0.100~rc.2.25502.107-0.12
+- Update to .NET SDK 10.0.100-rc.2.25502.107 and Runtime 10.0.0-rc.2.25502.107
+- Resolves: RHEL-121558
+
+* Tue Sep 30 2025 Omair Majid <omajid@redhat.com> - 10.0.100~rc.1.25451.107-0.11
+- Disable bootstrap
+- Related: RHEL-114571
+
+* Sun Sep 14 2025 Omair Majid <omajid@redhat.com> - 10.0.100~rc.1.25451.107-0.10
+- Update to .NET 10 RC 1
+- Resolves: RHEL-114571
+
 * Tue Sep 09 2025 Omair Majid <omajid@redhat.com> - 10.0.100~preview.7.25380.108-0.9
 - Disable bootstrap
 - Related: RHEL-98678
