@@ -77,7 +77,7 @@
 
 Name:           dotnet%{dotnetver}
 Version:        %{sdk_rpm_version}
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        .NET Runtime and SDK
 License:        0BSD AND Apache-2.0 AND (Apache-2.0 WITH LLVM-exception) AND APSL-2.0 AND BSD-2-Clause AND BSD-3-Clause AND BSD-4-Clause AND BSL-1.0 AND bzip2-1.0.6 AND CC0-1.0 AND CC-BY-3.0 AND CC-BY-4.0 AND CC-PDDC AND CNRI-Python AND EPL-1.0 AND GPL-2.0-only AND (GPL-2.0-only WITH GCC-exception-2.0) AND GPL-2.0-or-later AND GPL-3.0-only AND ICU AND ISC AND LGPL-2.1-only AND LGPL-2.1-or-later AND LicenseRef-Fedora-Public-Domain AND LicenseRef-ISO-8879 AND MIT AND MIT-Wu AND MS-PL AND MS-RL AND NCSA AND OFL-1.1 AND OpenSSL AND Unicode-DFS-2015 AND Unicode-DFS-2016 AND W3C-19980720 AND X11 AND Zlib
 
@@ -899,33 +899,29 @@ export COMPlus_LTTng=0
 
 
 %changelog
-* Wed Apr 08 2026 Omair Majid <omajid@redhat.com> - 10.0.106-1
+* Fri Apr 17 2026 Omair Majid <omajid@redhat.com> - 10.0.106-2
 - Update to .NET SDK 10.0.106 and Runtime 10.0.6
-- Resolves: RHEL-163384
+- Resolves: RHEL-163386
 
-* Tue Mar 03 2026 Dominik Rehák <drehak@redhat.com> - 10.0.104-1
+* Fri Mar 27 2026 Dominik Rehák <drehak@redhat.com> - 10.0.104-2
 - Update to .NET SDK 10.0.104 and Runtime 10.0.4
-- Resolves: RHEL-152952
+- Resolves: RHEL-152953
 
-* Mon Feb 02 2026 Omair Majid <omajid@redhat.com> - 10.0.103-1
+* Wed Feb 11 2026 Omair Majid <omajid@redhat.com> - 10.0.103-2
 - Update to .NET SDK 10.0.103 and Runtime 10.0.3
-- Resolves: RHEL-144979
+- Resolves: RHEL-144974
 
-* Thu Jan 08 2026 Omair Majid <omajid@redhat.com> - 10.0.102-1
+* Wed Jan 14 2026 Omair Majid <omajid@redhat.com> - 10.0.102-2
 - Update to .NET SDK 10.0.102 and Runtime 10.0.2
-- Resolves: RHEL-138642
+- Resolves: RHEL-138640
 
-* Tue Dec 02 2025 Omair Majid <omajid@redhat.com> - 10.0.101-1
+* Tue Dec 09 2025 Omair Majid <omajid@redhat.com> - 10.0.101-2
 - Update to .NET SDK 10.0.101 and Runtime 10.0.1
-- Resolves: RHEL-130940
+- Resolves: RHEL-130938
 
-* Wed Nov 05 2025 Omair Majid <omajid@redhat.com> - 10.0.100-2
-- Do not include -rtm in version strings of the SDK
-- Related: RHEL-125750
-
-* Mon Nov 03 2025 Omair Majid <omajid@redhat.com> - 10.0.100-1
+* Wed Nov 12 2025 Omair Majid <omajid@redhat.com> - 10.0.100-2
 - Update to .NET SDK 10.0.100 and Runtime 10.0.0
-- Resolves: RHEL-125750
+- Resolves: RHEL-125748
 
 * Fri Oct 17 2025 Omair Majid <omajid@redhat.com> - 10.0.100~rc.2.25502.107-0.10
 - Update to .NET SDK 10.0.100-rc.2.25502.107 and Runtime 10.0.0-rc.2.25502.107
