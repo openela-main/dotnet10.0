@@ -14,13 +14,13 @@
 
 # upstream can produce releases with a different tag than the SDK version
 #%%global upstream_tag v%%{runtime_version}
-%global upstream_tag v10.0.106
+%global upstream_tag v10.0.108
 %global upstream_tag_without_v %(echo %{upstream_tag} | sed -e 's|^v||')
 
 %global hostfxr_version %{runtime_version}
-%global runtime_version 10.0.6
-%global aspnetcore_runtime_version 10.0.6
-%global sdk_version 10.0.106
+%global runtime_version 10.0.8
+%global aspnetcore_runtime_version 10.0.8
+%global sdk_version 10.0.108
 %global sdk_feature_band_version %(echo %{sdk_version} | cut -d '-' -f 1 | sed -e 's|[[:digit:]][[:digit:]]$|00|')
 %global templates_version %{aspnetcore_runtime_version}
 #%%global templates_version %%(echo %%{runtime_version} | awk 'BEGIN { FS="."; OFS="." } {print $1, $2, $3+1 }')
@@ -77,7 +77,7 @@
 
 Name:           dotnet%{dotnetver}
 Version:        %{sdk_rpm_version}
-Release:        2%{?dist}
+Release:        1%{?dist}
 Summary:        .NET Runtime and SDK
 License:        0BSD AND Apache-2.0 AND (Apache-2.0 WITH LLVM-exception) AND APSL-2.0 AND BSD-2-Clause AND BSD-3-Clause AND BSD-4-Clause AND BSL-1.0 AND bzip2-1.0.6 AND CC0-1.0 AND CC-BY-3.0 AND CC-BY-4.0 AND CC-PDDC AND CNRI-Python AND EPL-1.0 AND GPL-2.0-only AND (GPL-2.0-only WITH GCC-exception-2.0) AND GPL-2.0-or-later AND GPL-3.0-only AND ICU AND ISC AND LGPL-2.1-only AND LGPL-2.1-or-later AND LicenseRef-Fedora-Public-Domain AND LicenseRef-ISO-8879 AND MIT AND MIT-Wu AND MS-PL AND MS-RL AND NCSA AND OFL-1.1 AND OpenSSL AND Unicode-DFS-2015 AND Unicode-DFS-2016 AND W3C-19980720 AND X11 AND Zlib
 
@@ -158,6 +158,7 @@ BuildRequires:  lttng-ust-devel
 %endif
 BuildRequires:  make
 BuildRequires:  openssl-devel
+BuildRequires:  procps-ng
 BuildRequires:  python3
 %if ! %{use_bundled_rapidjson}
 BuildRequires:  rapidjson-devel
@@ -559,12 +560,14 @@ rm -r src/runtime/src/native/external/zlib-ng
 
 
 %build
+cat /proc/cpuinfo
+cat /proc/meminfo
 cat /etc/os-release
 
 %if %{without bootstrap}
 # We need to create a copy because build scripts will mutate this
 cp -a %{_libdir}/dotnet previously-built-dotnet
-find previously-built-dotnet
+#find previously-built-dotnet
 %endif
 
 %if 0%{?fedora} || 0%{?rhel} >= 9
@@ -621,6 +624,14 @@ export EXTRA_CFLAGS="$CFLAGS"
 export EXTRA_CXXFLAGS="$CXXFLAGS"
 export EXTRA_LDFLAGS="$LDFLAGS"
 
+# In some build environments, the build environment is shared across multiple
+# packages. We need to be careful not to consume all the resources of the
+# entire system. If we do, we might get killed by OOM killer.
+%ifarch ppc64le s390x # TODO: conditionalize on konflux too
+export DOTNET_PROCESSOR_COUNT=4
+export DOTNET_GCHeapHardLimit=0x400000000
+%endif
+
 # Disable tracing, which is incompatible with certain versions of
 # lttng See https://github.com/dotnet/runtime/issues/57784. The
 # suggested compile-time change doesn't work, unfortunately.
@@ -651,11 +662,11 @@ system_libs=
 %endif
 
 %ifarch ppc64le s390x
-max_attempts=3
+max_attempts=5
 timeout=5h
 %else
 max_attempts=3
-timeout=120m
+timeout=2.5h
 %endif
 
 function retry_until_success {
@@ -690,25 +701,34 @@ find -depth -name 'artifacts' -type d -print -exec rm -rf {} \;
 %ifarch %{mono_archs}
   --use-mono-runtime \
 %endif
+  --clean-while-building \
   -- \
   /p:UseSystemLibs=${system_libs} \
   /p:TargetRid=%{runtime_id} \
   /p:OfficialBuilder="$vendor" \
-  /p:MinimalConsoleLogOutput=false \
   /p:ContinueOnPrebuiltBaselineError=true \
-  /v:n \
-  /p:LogVerbosity=n
+  #/v:n \
+  #/p:LogVerbosity=n \
+  #/p:MinimalConsoleLogOutput=false \
+
+
 EOF
 
 chmod +x dotnet-rpm-build.sh
 
 VERBOSE=1 retry_until_success $max_attempts \
     timeout $timeout \
-    ./dotnet-rpm-build.sh
+    ./dotnet-rpm-build.sh || { cat /proc/cpuinfo; cat /proc/meminfo; env; exit 1; }
 
+# Kill any leftover processes
+pgrep -x dotnet -u "$UID" -a
+pkill -x dotnet -u "$UID"
+pkill -x VBCSCompiler -u "$UID"
 
 sed -e 's|[@]LIBDIR[@]|%{_libdir}|g' %{SOURCE102} > dotnet.sh
 
+env
+ps aux
 
 
 %install
@@ -808,6 +828,7 @@ find %{buildroot}%{_libdir}/dotnet/sdk -type f -name '*.pdb'  | sed -E 's|%{buil
 # delete files, we will not have everything we need to self-test in %%check.
 %{buildroot}%{_libdir}/dotnet/dotnet --info
 %{buildroot}%{_libdir}/dotnet/dotnet --version
+ps aux
 
 # Provided by dotnet-host from another SRPM
 rm %{buildroot}%{_libdir}/dotnet/LICENSE.txt
@@ -826,6 +847,7 @@ export COMPlus_LTTng=0
 %if %{is_latest_dotnet}
 %{buildroot}%{_libdir}/dotnet/dotnet --info
 %{buildroot}%{_libdir}/dotnet/dotnet --version
+ps aux
 %endif
 
 
@@ -915,6 +937,14 @@ export COMPlus_LTTng=0
 
 
 %changelog
+* Wed May 06 2026 Omair Majid <omajid@redhat.com> - 10.0.108-1
+- Update to .NET SDK 10.0.108 and Runtime 10.0.8
+- Resolves: RHEL-173909
+
+* Wed Apr 22 2026 Omair Majid <omajid@redhat.com> - 10.0.106-3
+- Adjust build limits
+- Resolves: RHEL-169518
+
 * Fri Apr 17 2026 Omair Majid <omajid@redhat.com> - 10.0.106-2
 - Update to .NET SDK 10.0.106 and Runtime 10.0.6
 - Resolves: RHEL-163387
