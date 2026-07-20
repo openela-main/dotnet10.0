@@ -14,13 +14,13 @@
 
 # upstream can produce releases with a different tag than the SDK version
 #%%global upstream_tag v%%{runtime_version}
-%global upstream_tag v10.0.109
+%global upstream_tag v10.0.110
 %global upstream_tag_without_v %(echo %{upstream_tag} | sed -e 's|^v||')
 
 %global hostfxr_version %{runtime_version}
-%global runtime_version 10.0.9
-%global aspnetcore_runtime_version 10.0.9
-%global sdk_version 10.0.109
+%global runtime_version 10.0.10
+%global aspnetcore_runtime_version 10.0.10
+%global sdk_version 10.0.110
 %global sdk_feature_band_version %(echo %{sdk_version} | cut -d '-' -f 1 | sed -e 's|[[:digit:]][[:digit:]]$|00|')
 %global templates_version %{aspnetcore_runtime_version}
 #%%global templates_version %%(echo %%{runtime_version} | awk 'BEGIN { FS="."; OFS="." } {print $1, $2, $3+1 }')
@@ -899,9 +899,17 @@ export COMPlus_LTTng=0
 
 
 %changelog
-* Wed Jun 03 2026 Tom Deseyn <tdeseyn@redhat.com> - 10.0.109-1
+* Wed Jul 08 2026 Satish Mane <satmane@redhat.com> - 10.0.110-1
+- Update to .NET SDK 10.0.110 and Runtime 10.0.10
+- Resolves: RHEL-192459
+
+* Wed Jun 10 2026 Tom Deseyn <tdeseyn@redhat.com> - 10.0.109-2
 - Update to .NET SDK 10.0.109 and Runtime 10.0.9
 - Resolves: RHEL-181555
+
+* Thu May 28 2026 Omair Majid <omajid@redhat.com> - 10.0.108-2
+- Update to .NET SDK 10.0.108 and Runtime 10.0.8
+- Resolves: RHEL-173906
 
 * Fri Apr 17 2026 Omair Majid <omajid@redhat.com> - 10.0.106-2
 - Update to .NET SDK 10.0.106 and Runtime 10.0.6
