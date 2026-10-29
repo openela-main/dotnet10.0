@@ -14,13 +14,13 @@
 
 # upstream can produce releases with a different tag than the SDK version
 #%%global upstream_tag v%%{runtime_version}
-%global upstream_tag v10.0.113
+%global upstream_tag v10.0.114
 %global upstream_tag_without_v %(echo %{upstream_tag} | sed -e 's|^v||')
 
 %global hostfxr_version %{runtime_version}
-%global runtime_version 10.0.13
-%global aspnetcore_runtime_version 10.0.13
-%global sdk_version 10.0.113
+%global runtime_version 10.0.14
+%global aspnetcore_runtime_version 10.0.14
+%global sdk_version 10.0.114
 %global sdk_feature_band_version %(echo %{sdk_version} | cut -d '-' -f 1 | sed -e 's|[[:digit:]][[:digit:]]$|00|')
 %global templates_version %{aspnetcore_runtime_version}
 #%%global templates_version %%(echo %%{runtime_version} | awk 'BEGIN { FS="."; OFS="." } {print $1, $2, $3+1 }')
@@ -874,12 +874,12 @@ export COMPlus_LTTng=0
 
 
 
+%if %{is_latest_dotnet}
 %if ( 0%{?fedora} && 0%{?fedora} < 38 ) || ( 0%{?rhel} && 0%{?rhel} < 9 )
 %files -n dotnet
 # empty package useful for dependencies
 %endif
 
-%if %{is_latest_dotnet}
 %files -n dotnet-host
 %dir %{_libdir}/dotnet
 %{_libdir}/dotnet/dotnet
@@ -959,7 +959,11 @@ export COMPlus_LTTng=0
 
 
 %changelog
-* Thu Oct 08 2026 Tom Deseyn <tdeseyn@redhat.com> - 10.0.113-1
+* Mon Oct 26 2026 Omair Majid <omajid@redhat.com> - 10.0.114-1
+- Update to .NET SDK 10.0.114 and Runtime 10.0.14
+- Resolves: RHEL-291741
+
+* Wed Oct 14 2026 Tom Deseyn <tdeseyn@redhat.com> - 10.0.113-2
 - Update to .NET SDK 10.0.113 and Runtime 10.0.13
 - Resolves: RHEL-277805
 
