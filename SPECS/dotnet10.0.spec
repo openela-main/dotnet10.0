@@ -10,7 +10,7 @@
 
 # Only the package for the latest dotnet version should provide RPMs like
 # dotnet-host
-%global is_latest_dotnet 1
+%global is_latest_dotnet 0
 
 # upstream can produce releases with a different tag than the SDK version
 #%%global upstream_tag v%%{runtime_version}
@@ -866,7 +866,7 @@ test -f %{buildroot}%{_libdir}/dotnet/sdk/%{sdk_version}*/Sdks/Microsoft.NET.Sdk
 echo "Testing build results for debug symbols..."
 %{SOURCE101} -v %{buildroot}%{_libdir}/dotnet/
 
-%if %{include_macros}
+%if %{is_latest_dotnet} && %{include_macros}
 install -dm 0755 %{buildroot}%{_rpmmacrodir}/
 install -m 0644 %{SOURCE100} %{buildroot}%{_rpmmacrodir}/
 %endif
@@ -890,6 +890,7 @@ ps aux
 rm %{buildroot}%{_libdir}/dotnet/LICENSE.txt
 rm %{buildroot}%{_libdir}/dotnet/ThirdPartyNotices.txt
 rm %{buildroot}%{_libdir}/dotnet/dotnet
+rm %{buildroot}%{_libdir}/dotnet/dnx
 %endif
 
 
@@ -995,35 +996,36 @@ ps aux
 %changelog
 * Mon Oct 26 2026 Omair Majid <omajid@redhat.com> - 10.0.114-1
 - Update to .NET SDK 10.0.114 and Runtime 10.0.14
-- Resolves: RHEL-291745
+- Resolves: RHEL-291747
 
-* Thu Oct 08 2026 Tom Deseyn <tdeseyn@redhat.com> - 10.0.113-1
+* Wed Oct 15 2026 Tom Deseyn <tdeseyn@redhat.com> - 10.0.113-1
 - Update to .NET SDK 10.0.113 and Runtime 10.0.13
-- Resolves: RHEL-277809
+- Resolves: RHEL-277811
 
-* Wed Sep 02 2026 Dominik Rehák <drehak@redhat.com> - 10.0.112-1
+* Mon Sep 14 2026 Dominik Rehák <drehak@redhat.com> - 10.0.112-2
 - Update to .NET SDK 10.0.112 and Runtime 10.0.12
-- Resolves: RHEL-252320
+- Mark as not the latest dotnet version anymore
+- Resolves: RHEL-252322
 
-* Sun Aug 09 2026 Omair Majid <omajid@redhat.com> - 10.0.111-1
+* Fri Aug 14 2026 Omair Majid <omajid@redhat.com> - 10.0.111-2
 - Update to .NET SDK 10.0.111 and Runtime 10.0.11
-- Resolves: RHEL-235482
+- Resolves: RHEL-235480
 
-* Wed Jul 08 2026 Satish Mane <satmane@redhat.com> - 10.0.110-1
+* Thu Jul 23 2026 Satish Mane <satmane@redhat.com> - 10.0.110-2
 - Update to .NET SDK 10.0.110 and Runtime 10.0.10
-- Resolves: RHEL-192463
+- Resolves: RHEL-192461
 
-* Thu Jul 02 2026 Tom Deseyn <tdeseyn@redhat.com> - 10.0.109-2
+* Thu Jul 02 2026 Tom Deseyn <tdeseyn@redhat.com> - 10.0.109-3
 - Reduce time to detect hanging builds
-- Resolves: RHEL-191640
+- Resolves: RHEL-183875
 
-* Wed Jun 03 2026 Tom Deseyn <tdeseyn@redhat.com> - 10.0.109-1
+* Wed Jun 10 2026 Tom Deseyn <tdeseyn@redhat.com> - 10.0.109-2
 - Update to .NET SDK 10.0.109 and Runtime 10.0.9
-- Resolves: RHEL-181559
+- Resolves: RHEL-181557
 
-* Wed May 06 2026 Omair Majid <omajid@redhat.com> - 10.0.108-1
+* Thu May 28 2026 Omair Majid <omajid@redhat.com> - 10.0.108-2
 - Update to .NET SDK 10.0.108 and Runtime 10.0.8
-- Resolves: RHEL-173909
+- Resolves: RHEL-173908
 
 * Wed Apr 22 2026 Omair Majid <omajid@redhat.com> - 10.0.106-3
 - Adjust build limits
